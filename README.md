@@ -1,4 +1,4 @@
-# What's this project about?
+# Hedera Token Service: Everything about setting token keys for NFTs
 
 This project explores various test cases related to setting token keys for NFTs created using the Hedera Token Service (HTS). 
 
@@ -7,8 +7,8 @@ This project explores various test cases related to setting token keys for NFTs 
 - **[Project Setup](#project-setup)**
 - **[Token Keys](#token-keys)**
     - [Which token keys can you set?](#which-token-keys-can-you-set)
-- **[How to create an NFT?](#how-to-create-an-NFT)**
-- **[Token keys test cases](#token-keys-test-cases)**
+- **[How to create an NFT?](##how-to-create-an-nft-using-the-javascript-sdk)**
+- **[Token keys test cases](#token-keys---hedera-token-service-hts)**
     - [Case 1: Can you make changes to an NFT when you don't set an admin key?](#case-1)
     - [Case 2: Can the admin key remove other keys?](#case-2)
     - [Case 3: Can the admin key update other keys?](#case-3)
