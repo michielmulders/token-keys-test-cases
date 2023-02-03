@@ -10,7 +10,12 @@
     "type": "git",
     "url": "git+https://github.com/michielmulders/token-keys-test-cases.git"
   },
-  "keywords": ["Hedera", "Hashgraph", "Hedera Token service", "Hedera Hashgraph"],
+  "keywords": [
+    "Hedera",
+    "Hashgraph",
+    "Hedera Token service",
+    "Hedera Hashgraph"
+  ],
   "author": "Michiel Mulders",
   "license": "ISC",
   "bugs": {
@@ -18,6 +23,7 @@
   },
   "homepage": "https://github.com/michielmulders/token-keys-test-cases#readme",
   "dependencies": {
-    "@hashgraph/sdk": "^2.19.2"
+    "@hashgraph/sdk": "^2.19.2",
+    "dotenv": "^16.0.3"
   }
 }

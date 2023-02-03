@@ -69,7 +69,7 @@ async function main() {
   console.log('\n- Updating token with new supply key');
   let tokenUpdateTx = await new TokenUpdateTransaction()
     .setTokenId(tokenId)
-    .setSupplyKey(newSupplyKey) // if you set this to null, nothing happens
+    .setSupplyKey(null) // if you set this to null, nothing happens - try "newSupplyKey" which works
     .freezeWith(client)
     .sign(adminKey);
 

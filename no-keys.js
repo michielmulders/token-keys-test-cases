@@ -29,14 +29,16 @@ const treasuryKey = PrivateKey.generateED25519();
 async function main() {
   // Create accounts
   console.log(`- Creating accounts...`);
-  const [adminAccStatus, adminId] = await accountCreatorFcn(adminKey, 2);
-  console.log(`- Created admin account ${adminId} that has a balance of 2ℏ`);
+  const [adminAccStatus, adminId] = await accountCreatorFcn(adminKey, 5);
+  console.log(`- Created admin account ${adminId} that has a balance of 5ℏ`);
 
-  const [randomAccStatus, randomId] = await accountCreatorFcn(randomKey, 2);
-  console.log(`- Created random account ${randomId} that has a balance of 2ℏ`);
+  const [randomAccStatus, randomId] = await accountCreatorFcn(randomKey, 5);
+  console.log(`- Created random account ${randomId} that has a balance of 5ℏ`);
   
-  const [treasuryAccStatus, treasuryId] = await accountCreatorFcn(treasuryKey, 2);
-  console.log(`- Created random account ${treasuryId} that has a balance of 2ℏ`);
+  const [treasuryAccStatus, treasuryId] = await accountCreatorFcn(treasuryKey, 5);
+  console.log(`- Created random account ${treasuryId} that has a balance of 5ℏ`);
+
+  console.log(treasuryKey.publicKey)
 
   // Create NFT
   console.log(`\n- Creating NFT (with all token keys set)`);
@@ -49,14 +51,8 @@ async function main() {
     .setTreasuryAccountId(treasuryId) // needs to sign
     .setSupplyType(TokenSupplyType.Finite)
     .setMaxSupply(5)
-    // Set keys
-    .setAdminKey(adminKey)
-    .setFreezeKey(randomKey)
-    .setKycKey(randomKey)
-    .setWipeKey(randomKey)
-    .setSupplyKey(randomKey)
-    .setPauseKey(randomKey)
-    .setFeeScheduleKey(randomKey)
+    // No keys throws error: TOKEN_HAS_NO_SUPPLY_KEY
+    .setSupplyKey(randomKey) // REQUIRED
     .freezeWith(client);
 
   let nftCreateTxSign = await (await nftCreate.sign(adminKey)).sign(treasuryKey);
@@ -67,7 +63,6 @@ async function main() {
 
   let tokenInfo = await new TokenInfoQuery().setTokenId(tokenId).execute(client);
   console.log(`- Current NFT supply: ${tokenInfo.totalSupply}`);
-  console.log(`- Exchange rate for transaction: ${nftCreateRx.exchangeRate.exchangeRateInCents}`);
 
   client.close();
 
