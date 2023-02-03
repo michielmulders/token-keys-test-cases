@@ -1,15 +1,12 @@
 console.clear();
 require("dotenv").config();
 
-// Goal: Create an NFT using Hedera Token Service with all token keys set. 
-// Note that the treasury account ID is also set, who needs to sign the transaction as well
-
 const {
   AccountId,
   PrivateKey,
   Client,
   TokenCreateTransaction,
-  TokenInfoQuery,
+  TokenUpdateTransaction,
   TokenType,
   Hbar,
   TokenSupplyType,
@@ -23,50 +20,57 @@ const client = Client.forTestnet().setOperator(operatorId, operatorKey);
 client.setDefaultMaxTransactionFee(new Hbar(100));
 
 const adminKey = PrivateKey.generateED25519();
-const randomKey = PrivateKey.generateED25519();
 const treasuryKey = PrivateKey.generateED25519();
+const newAdminKey = PrivateKey.generateED25519();
 
 async function main() {
   // Create accounts
   console.log(`- Creating accounts...`);
-  const [adminAccStatus, adminId] = await accountCreatorFcn(adminKey, 5);
-  console.log(`- Created admin account ${adminId} that has a balance of 5ℏ`);
+  const [adminAccStatus, adminId] = await accountCreatorFcn(adminKey, 3);
+  console.log(`- Created admin account ${adminId} that has a balance of 3ℏ`);
 
-  const [randomAccStatus, randomId] = await accountCreatorFcn(randomKey, 5);
-  console.log(`- Created random account ${randomId} that has a balance of 5ℏ`);
-  
-  const [treasuryAccStatus, treasuryId] = await accountCreatorFcn(treasuryKey, 5);
-  console.log(`- Created random account ${treasuryId} that has a balance of 5ℏ`);
+  const [treasuryAccStatus, treasuryId] = await accountCreatorFcn(treasuryKey, 3);
+  console.log(`- Created treasury account ${treasuryId} that has a balance of 3ℏ`);
+
+  const [newAdminAccStatus, newAdminId] = await accountCreatorFcn(newAdminKey, 3);
+  console.log(`- Created new admin account ${newAdminId} that has a balance of 3ℏ`);
 
   // Create NFT
-  console.log(`\n- Creating NFT (with all token keys set)`);
-  let nftCreate = await new TokenCreateTransaction()
+  console.log(`\n- Creating NFT (with admin and supply key set)`);
+  let nftCreateTx = await new TokenCreateTransaction()
     .setTokenName("Fall Collection")
     .setTokenSymbol("LEAF")
     .setTokenType(TokenType.NonFungibleUnique)
     .setDecimals(0)
     .setInitialSupply(0)
-    .setTreasuryAccountId(treasuryId) // needs to sign
+    .setTreasuryAccountId(treasuryId)
     .setSupplyType(TokenSupplyType.Finite)
     .setMaxSupply(5)
-    // Set keys
+    // Set admin key
     .setAdminKey(adminKey)
-    .setFreezeKey(randomKey)
-    .setKycKey(randomKey)
-    .setWipeKey(randomKey)
-    .setSupplyKey(randomKey)
-    .setPauseKey(randomKey)
-    .setFeeScheduleKey(randomKey)
-    .freezeWith(client);
+    .setSupplyKey(adminKey)
+    .freezeWith(client)
+    .sign(treasuryKey);
 
-  let nftCreateTxSign = await (await nftCreate.sign(adminKey)).sign(treasuryKey);
+  let nftCreateTxSign = await nftCreateTx.sign(adminKey);
   let nftCreateSubmit = await nftCreateTxSign.execute(client);
   let nftCreateRx = await nftCreateSubmit.getReceipt(client);
   let tokenId = nftCreateRx.tokenId;
   console.log(`- Created NFT with Token ID: ${tokenId}`);
 
-  let tokenInfo = await new TokenInfoQuery().setTokenId(tokenId).execute(client);
-  console.log(`- Current NFT supply: ${tokenInfo.totalSupply}`);
+  // Update admin key (old and new admin key need to sign)
+  console.log('\n- Updating token with new admin key');
+  let tokenUpdateTx = await new TokenUpdateTransaction()
+    .setTokenId(tokenId)
+    .setAdminKey(newAdminKey)
+    .freezeWith(client)
+    .sign(newAdminKey);
+
+  // Only admin key (multisig) needs to sign
+  let tokenUpdateTxSign = await tokenUpdateTx.sign(adminKey);
+  let tokenUpdateTxSubmit = await tokenUpdateTxSign.execute(client);
+  let tokenUpdateTxRx = await tokenUpdateTxSubmit.getReceipt(client);
+  console.log('- Updated admin key');
 
   client.close();
 

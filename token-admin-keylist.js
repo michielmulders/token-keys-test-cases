@@ -23,6 +23,8 @@ client.setDefaultMaxTransactionFee(new Hbar(100));
 const adminKey = PrivateKey.generateED25519();
 const randomKey = PrivateKey.generateED25519();
 const treasuryKey = PrivateKey.generateED25519();
+const key1 = PrivateKey.generateED25519();
+const key2 = PrivateKey.generateED25519();
 const newSupplyKey = PrivateKey.generateED25519();
 
 async function main() {
@@ -31,25 +33,41 @@ async function main() {
   const [adminAccStatus, adminId] = await accountCreatorFcn(adminKey, 3);
   console.log(`- Created admin account ${adminId} that has a balance of 3ℏ`);
 
+  const [key1AccStatus, key1Id] = await accountCreatorFcn(key1, 3);
+  console.log(`- Created account 1: ${key1Id} that has a balance of 3ℏ`);
+  
+  const [key2AccStatus, key2Id] = await accountCreatorFcn(key2, 3);
+  console.log(`- Created account 2: ${key2Id} that has a balance of 3ℏ`);
+
   const [randomAccStatus, randomId] = await accountCreatorFcn(randomKey, 3);
   console.log(`- Created random account ${randomId} that has a balance of 3ℏ`);
-  
+
   const [treasuryAccStatus, treasuryId] = await accountCreatorFcn(treasuryKey, 3);
-  console.log(`- Created random account ${treasuryId} that has a balance of 3ℏ`);
+  console.log(`- Created treasury account ${treasuryId} that has a balance of 3ℏ`);
+
+  // Setting node IDs
+  // It is required to set the account ID of the node(s) the transaction will be submitted to when freezing a transaction for signatures.
+  const nodeId = [];
+  nodeId.push(new AccountId(3));
+
+  // Create keylist
+  console.log(`- Generating keylist...`);
+  const keyList = new KeyList([key1.publicKey, key2.publicKey], 2);
 
   // Create NFT
   console.log(`\n- Creating NFT (with all token keys set)`);
   let nftCreate = await new TokenCreateTransaction()
+    .setNodeAccountIds(nodeId)
     .setTokenName("Fall Collection")
     .setTokenSymbol("LEAF")
     .setTokenType(TokenType.NonFungibleUnique)
     .setDecimals(0)
     .setInitialSupply(0)
-    .setTreasuryAccountId(treasuryId)
+    .setTreasuryAccountId(treasuryId) // needs to sign
     .setSupplyType(TokenSupplyType.Finite)
     .setMaxSupply(5)
     // Set keys
-    .setAdminKey(adminKey)
+    .setAdminKey(keyList)
     .setFreezeKey(randomKey)
     .setKycKey(randomKey)
     .setWipeKey(randomKey)
@@ -59,7 +77,11 @@ async function main() {
     .freezeWith(client)
     .sign(treasuryKey);
 
-  let nftCreateTxSign = await nftCreate.sign(adminKey);
+  // Adding multisig signatures
+  const sig1 = key1.signTransaction(nftCreate);
+  const sig2 = key2.signTransaction(nftCreate);
+  const nftCreateTxSign = nftCreate.addSignature(key1.publicKey, sig1).addSignature(key2.publicKey, sig2);
+
   let nftCreateSubmit = await nftCreateTxSign.execute(client);
   let nftCreateRx = await nftCreateSubmit.getReceipt(client);
   let tokenId = nftCreateRx.tokenId;
@@ -68,12 +90,17 @@ async function main() {
   // Update supply key from token using token update transaction (not possible to remove by setting to "null")
   console.log('\n- Updating token with new supply key');
   let tokenUpdateTx = await new TokenUpdateTransaction()
+    .setNodeAccountIds(nodeId)
     .setTokenId(tokenId)
     .setSupplyKey(newSupplyKey) // if you set this to null, nothing happens
-    .freezeWith(client)
-    .sign(adminKey);
+    .freezeWith(client);
 
-  let tokenUpdateTxSubmit = await tokenUpdateTx.execute(client);
+  // Only admin key (multisig) needs to sign
+  const signature1 = key1.signTransaction(tokenUpdateTx);
+  const signature2 = key2.signTransaction(tokenUpdateTx);
+  const tokenUpdateTxSign = tokenUpdateTx.addSignature(key1.publicKey, signature1).addSignature(key2.publicKey, signature2)
+
+  let tokenUpdateTxSubmit = await tokenUpdateTxSign.execute(client);
   let tokenUpdateTxRx = await tokenUpdateTxSubmit.getReceipt(client);
   console.log('- Updated supply key');
 
