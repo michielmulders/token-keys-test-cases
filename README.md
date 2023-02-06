@@ -45,7 +45,7 @@ The Hedera Token Service enables the configuration, management, and transfer of 
 
 ## Which token keys can you set?
 
-1. **Admin key:** The key which can perform token update and token delete operations on the token. The admin key has the authority to change the supply key, freeze key, pause key, wipe key, and KYC key. It can also update the treasury account of the token. If empty, the token can be perceived as immutable (not being able to be updated/deleted).
+1. **Admin key:** This key can perform token update and token delete operations on the token. The admin key has the authority to change the supply key, freeze key, pause key, wipe key, and KYC key. It can also update the treasury account of the token. If empty, the token can be perceived as immutable (not able to be updated/deleted).
 
 2. **Freeze key:** This key is used to freeze or unfreeze token accounts. When an account is frozen, it cannot perform any transactions.
 
@@ -57,7 +57,7 @@ The Hedera Token Service enables the configuration, management, and transfer of 
 
 6. **Pause key:** This key has the authority to pause or unpause a token. Pausing a token prevents the token from participating in all transactions.
 
-7. **Fee Schedule key:** This key can change the token's custom fee schedule. It must sign a TokenFeeScheduleUpdate transaction. A token without a fee schedule key is immutable, which means you can’t set a custom fee schedule after the token has been created.
+7. **Fee Schedule key:** This key can change the token's custom fee schedule. It must sign a `TokenFeeScheduleUpdate` transaction. A token without a fee schedule key is immutable, which means you can’t set a custom fee schedule after the token has been created.
 
 **[Read the docs about creating a token and setting token keys](https://docs.hedera.com/hedera/docs/sdks/tokens/define-a-token)**
 
@@ -93,7 +93,7 @@ Now, let's take a look at specific test cases related to setting token keys.
 ### Case 1
 **Can you make changes to an NFT when you don't set an admin key?**
 
-**Output:** When you don't set an admin key, the token becomes immutable. This means that none of the token properties can be updated. 
+**Output:** The token becomes immutable when you don't set an admin key. This means that none of the token properties can be updated. 
 
 ```js
 let nftCreateTx = await new TokenCreateTransaction()
@@ -117,7 +117,7 @@ let nftCreateTx = await new TokenCreateTransaction()
 ### Case 2
 **Can the admin key remove other keys or itself?**
 
-**Output:** No, it's not possible to remove keys or itself. The admin key is only allowed to update keys. When you set a key to null or undefined, nothing will change.
+**Output:** No, it's not possible to remove keys or itself. The admin key is only allowed to update keys. When you set a key to `null` or `undefined`, nothing will change.
 
 ```js
 let tokenUpdateTx = await new TokenUpdateTransaction()
@@ -149,7 +149,7 @@ let tokenUpdateTx = await new TokenUpdateTransaction()
 ### Case 4
 **Can the admin key be updated to a new admin key?**
 
-**Output:** Yes, the admin key can be updated when its set. Both the old and the new admin key need to sign the transaction to be successful. 
+**Output:** Yes, the admin key can be updated when it's set. Both the old and the new admin key must sign the transaction to be successful. 
 
 ```js
 let tokenUpdateTx = await new TokenUpdateTransaction()
@@ -167,7 +167,7 @@ let tokenUpdateTxSign = await tokenUpdateTx.sign(adminKey);
 ### Case 5
 **Can one account ID be set to different keys for the same token?**
 
-**Output:** Yes, you are allowed to set the same account for multipe keys on a token. For instance, our base example uses the `random account ID` for 6 keys.
+**Output:** Yes, you are allowed to set the same account for multiple keys on a token. For instance, our base example uses the `random account ID` for 6 keys.
 
 ```js
 let nftCreate = await new TokenCreateTransaction()
@@ -196,7 +196,7 @@ let nftCreate = await new TokenCreateTransaction()
 ### Case 6
 **Can you assign multiple accounts to a single key?**
 
-**Output:** Yes, you can create a `KeyList`, which acts as a multisig. For instance, you can create a KeyList that contains two accounts and set the signing requirements to `2-out-of-2`. This means that both accounts need to sign when the specific key is required. 
+**Output:** Yes, you can create a `KeyList`, which acts as a multisig. For instance, you can create a KeyList that contains two accounts and set the signing requirements to `2-out-of-2`. Both accounts need to sign when the specific key is required. 
 
 Below you find an example with an admin key that has been assigned a `2-out-of-2` `KeyList`.
 
