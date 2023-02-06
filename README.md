@@ -5,17 +5,17 @@ This project explores various test cases related to setting token keys for NFTs 
 **Table of Contents:**
 
 - **[Project Setup](#project-setup)**
-- **[Token Keys](#token-keys)**
+- **[Token Keys](#token-keys---hedera-token-service-hts)**
     - [Which token keys can you set?](#which-token-keys-can-you-set)
-- **[How to create an NFT?](##how-to-create-an-nft-using-the-javascript-sdk)**
+- **[How to create an NFT?](#how-to-create-an-nft-using-the-javascript-sdk)**
 - **[Token keys test cases](#token-keys---hedera-token-service-hts)**
     - [Case 1: Can you make changes to an NFT when you don't set an admin key?](#case-1)
     - [Case 2: Can the admin key remove other keys?](#case-2)
     - [Case 3: Can the admin key update other keys?](#case-3)
-    - [Case 4:](#case-4)
-    - [Case 5:](#case-5)
-    - [Case 6:](#case-6)
-    - [Case 7:](#case-7)
+    - [Case 4: Can the admin key remove itself?](#case-4)
+    - [Case 5: Can one account ID be set to different keys for the same token?](#case-5)
+    - [Case 6: Can you assign multiple accounts to a single key?](#case-6)
+    - [Case 7: Can you set no keys for an NFT?](#case-7)
 
 # Project Setup
 
@@ -93,17 +93,39 @@ Now, let's take a look at specific test cases related to setting token keys.
 ### Case 1
 **Can you make changes to an NFT when you don't set an admin key?**
 
-**Output:**
+**Output:** When you don't set an admin key, the token becomes immutable. This means that none of the token properties can be updated. 
 
-When you don't set an admin key, the token becomes immutable. This means that none of the token properties can be updated. 
+```js
+let nftCreateTx = await new TokenCreateTransaction()
+    .setTokenName("Fall Collection")
+    .setTokenSymbol("LEAF")
+    .setTokenType(TokenType.NonFungibleUnique)
+    .setDecimals(0)
+    .setInitialSupply(0)
+    .setTreasuryAccountId(treasuryId)
+    .setSupplyType(TokenSupplyType.Finite)
+    .setMaxSupply(5)
+    // No admin key, only the required supply key is set
+    .setSupplyKey(treasuryKey)
+    .freezeWith(client)
+    .sign(treasuryKey);
+```
 
 **Code example:** [immutable-token.js](https://github.com/michielmulders/token-keys-test-cases/blob/main/immutable-token.js)
 
 
 ### Case 2
-**Can the admin key remove other keys?**
+**Can the admin key remove other keys or itself?**
 
-**Output:** No, it's not possible to remove keys. The admin key is only allowed to update keys. When you set a key to null or undefined, nothing will change.
+**Output:** No, it's not possible to remove keys or itself. The admin key is only allowed to update keys. When you set a key to null or undefined, nothing will change.
+
+```js
+let tokenUpdateTx = await new TokenUpdateTransaction()
+    .setTokenId(tokenId)
+    .setSupplyKey(null) // if you set this to null, nothing happens
+    .freezeWith(client)
+    .sign(adminKey);
+```
 
 **Code example:** [all-keys-remove-supply.js](https://github.com/michielmulders/token-keys-test-cases/blob/main/all-keys-remove-supply.js)
 
@@ -111,39 +133,136 @@ When you don't set an admin key, the token becomes immutable. This means that no
 ### Case 3
 **Can the admin key update other keys?**
 
-**Output:** Yes, 
+**Output:** Yes, the admin key has the authority to change the supply key, freeze key, pause key, wipe key, and KYC key.
 
-**Code example:** [all-keys-remove-supply.js](https://github.com/michielmulders/token-keys-test-cases/blob/main/all-keys-remove-supply.js)
+```js
+let tokenUpdateTx = await new TokenUpdateTransaction()
+    .setTokenId(tokenId)
+    .setSupplyKey(newSupplyKey) 
+    .freezeWith(client)
+    .sign(adminKey);
+```
 
+**Code example:** [all-keys-update-supply.js](https://github.com/michielmulders/token-keys-test-cases/blob/main/all-keys-update-supply.js)
 
 
 ### Case 4
-**Can the admin key remove other keys?**
+**Can the admin key be updated to a new admin key?**
 
-**Output:** 
+**Output:** Yes, the admin key can be updated when its set. Both the old and the new admin key need to sign the transaction to be successful. 
 
-**Code example:** [all-keys-remove-supply.js](https://github.com/michielmulders/token-keys-test-cases/blob/main/all-keys-remove-supply.js)
+```js
+let tokenUpdateTx = await new TokenUpdateTransaction()
+    .setTokenId(tokenId)
+    .setAdminKey(newAdminKey)
+    .freezeWith(client)
+    .sign(newAdminKey);
+
+let tokenUpdateTxSign = await tokenUpdateTx.sign(adminKey);
+```
+
+**Code example:** [token-update-admin-key.js](https://github.com/michielmulders/token-keys-test-cases/blob/main/token-update-admin-key.js)
 
 
 ### Case 5
-**Can the admin key remove other keys?**
+**Can one account ID be set to different keys for the same token?**
 
-**Output:** 
+**Output:** Yes, you are allowed to set the same account for multipe keys on a token. For instance, our base example uses the `random account ID` for 6 keys.
 
-**Code example:** [all-keys-remove-supply.js](https://github.com/michielmulders/token-keys-test-cases/blob/main/all-keys-remove-supply.js)
+```js
+let nftCreate = await new TokenCreateTransaction()
+    .setTokenName("Fall Collection")
+    .setTokenSymbol("LEAF")
+    .setTokenType(TokenType.NonFungibleUnique)
+    .setDecimals(0)
+    .setInitialSupply(0)
+    .setTreasuryAccountId(treasuryId)
+    .setSupplyType(TokenSupplyType.Finite)
+    .setMaxSupply(5)
+    // Set keys
+    .setAdminKey(adminKey)
+    .setFreezeKey(randomKey) // 1
+    .setKycKey(randomKey) // 2
+    .setWipeKey(randomKey) // 3
+    .setSupplyKey(randomKey) // 4
+    .setPauseKey(randomKey) // 5
+    .setFeeScheduleKey(randomKey) // 6
+    .freezeWith(client);
+```
+
+**Code example:** [all-keys.js](https://github.com/michielmulders/token-keys-test-cases/blob/main/all-keys.js)
 
 
 ### Case 6
-**Can the admin key remove other keys?**
+**Can you assign multiple accounts to a single key?**
 
-**Output:** 
+**Output:** Yes, you can create a `KeyList`, which acts as a multisig. For instance, you can create a KeyList that contains two accounts and set the signing requirements to `2-out-of-2`. This means that both accounts need to sign when the specific key is required. 
 
-**Code example:** [all-keys-remove-supply.js](https://github.com/michielmulders/token-keys-test-cases/blob/main/all-keys-remove-supply.js)
+Below you find an example with an admin key that has been assigned a `2-out-of-2` `KeyList`.
+
+```js
+// Create keylist
+console.log(`- Generating keylist...`);
+const keyList = new KeyList([key1.publicKey, key2.publicKey], 2); // 2-out-of-2
+
+// Create NFT
+console.log(`\n- Creating NFT`);
+let nftCreate = await new TokenCreateTransaction()
+    .setNodeAccountIds(nodeId)
+    .setTokenName("Fall Collection")
+    .setTokenSymbol("LEAF")
+    .setTokenType(TokenType.NonFungibleUnique)
+    .setDecimals(0)
+    .setInitialSupply(0)
+    .setTreasuryAccountId(treasuryId) // needs to sign
+    .setSupplyType(TokenSupplyType.Finite)
+    .setMaxSupply(5)
+    // Set keys
+    .setAdminKey(keyList) // multisig (keylist)
+    .setSupplyKey(randomKey)
+    .freezeWith(client)
+    .sign(treasuryKey);
+```
+
+When you want to execute a transaction, both keys need to sign.
+
+```js
+// Adding multisig signatures
+const sig1 = key1.signTransaction(nftCreate);
+const sig2 = key2.signTransaction(nftCreate);
+const nftCreateTxSign = nftCreate.addSignature(key1.publicKey, sig1).addSignature(key2.publicKey, sig2);
+
+let nftCreateSubmit = await nftCreateTxSign.execute(client);
+let nftCreateRx = await nftCreateSubmit.getReceipt(client);
+let tokenId = nftCreateRx.tokenId;
+console.log(`- Created NFT with Token ID: ${tokenId}`);
+```
+
+**Code example:** [token-admin-keylist.js](https://github.com/michielmulders/token-keys-test-cases/blob/main/token-admin-keylist.js)
 
 
 ### Case 7
-**Can the admin key remove other keys?**
+**Can you set no keys for an NFT?**
 
-**Output:** 
+**Output:** No, the supply key is the only required key when you don't set any other keys for an NFT. If you don't set a supply key, you get the error `TOKEN_HAS_NO_SUPPLY_KEY`.
 
-**Code example:** [all-keys-remove-supply.js](https://github.com/michielmulders/token-keys-test-cases/blob/main/all-keys-remove-supply.js)
+```js
+let nftCreate = await new TokenCreateTransaction()
+    .setTokenName("Fall Collection")
+    .setTokenSymbol("LEAF")
+    .setTokenType(TokenType.NonFungibleUnique)
+    .setDecimals(0)
+    .setInitialSupply(0)
+    .setTreasuryAccountId(treasuryId) // needs to sign
+    .setSupplyType(TokenSupplyType.Finite)
+    .setMaxSupply(5)
+    // No keys throws error: TOKEN_HAS_NO_SUPPLY_KEY
+    .setSupplyKey(randomKey) // REQUIRED
+    .freezeWith(client);
+```
+
+**Code example:** [no-keys.js](https://github.com/michielmulders/token-keys-test-cases/blob/main/no-keys.js)
+
+## Learn more about token keys?
+
+Reach out on [Discord](https://hedera.com/discord) or look at the docs about [token creation](https://docs.hedera.com/hedera/sdks-and-apis/sdks/tokens/define-a-token) using the Hedera Token Service.

@@ -10,8 +10,7 @@ const {
   TokenType,
   Hbar,
   TokenSupplyType,
-  AccountCreateTransaction,
-  KeyList
+  AccountCreateTransaction
 } = require("@hashgraph/sdk");
 
 // Configure accounts and client, and generate needed keys
@@ -69,7 +68,7 @@ async function main() {
   console.log('\n- Updating token with new supply key');
   let tokenUpdateTx = await new TokenUpdateTransaction()
     .setTokenId(tokenId)
-    .setSupplyKey(null) // if you set this to null, nothing happens - try "newSupplyKey" which works
+    .setSupplyKey(null) // if you set this to null, nothing happens because you can't remove keys
     .freezeWith(client)
     .sign(adminKey);
 

@@ -52,7 +52,7 @@ async function main() {
 
   // Create keylist
   console.log(`- Generating keylist...`);
-  const keyList = new KeyList([key1.publicKey, key2.publicKey], 2);
+  const keyList = new KeyList([key1.publicKey, key2.publicKey], 2); // 2-out-of-2
 
   // Create NFT
   console.log(`\n- Creating NFT (with all token keys set)`);
@@ -67,7 +67,7 @@ async function main() {
     .setSupplyType(TokenSupplyType.Finite)
     .setMaxSupply(5)
     // Set keys
-    .setAdminKey(keyList)
+    .setAdminKey(keyList) // multisig (keylist)
     .setFreezeKey(randomKey)
     .setKycKey(randomKey)
     .setWipeKey(randomKey)

@@ -6,6 +6,7 @@ const {
   PrivateKey,
   Client,
   TokenCreateTransaction,
+  TokenUpdateTransaction,
   TokenType,
   Hbar,
   TokenSupplyType,
@@ -18,16 +19,26 @@ const operatorKey = PrivateKey.fromString(process.env.OPERATOR_PVKEY);
 const client = Client.forTestnet().setOperator(operatorId, operatorKey);
 client.setDefaultMaxTransactionFee(new Hbar(100));
 
+const adminKey = PrivateKey.generateED25519();
+const randomKey = PrivateKey.generateED25519();
 const treasuryKey = PrivateKey.generateED25519();
+const newSupplyKey = PrivateKey.generateED25519();
 
 async function main() {
   // Create accounts
+  console.log(`- Creating accounts...`);
+  const [adminAccStatus, adminId] = await accountCreatorFcn(adminKey, 3);
+  console.log(`- Created admin account ${adminId} that has a balance of 3ℏ`);
+
+  const [randomAccStatus, randomId] = await accountCreatorFcn(randomKey, 3);
+  console.log(`- Created random account ${randomId} that has a balance of 3ℏ`);
+  
   const [treasuryAccStatus, treasuryId] = await accountCreatorFcn(treasuryKey, 3);
-  console.log(`- Created treasury account ${treasuryId} that has a balance of 3ℏ`);
+  console.log(`- Created random account ${treasuryId} that has a balance of 3ℏ`);
 
   // Create NFT
-  console.log(`\n- Creating NFT (with only supply key)`);
-  let nftCreateTx = await new TokenCreateTransaction()
+  console.log(`\n- Creating NFT (with all token keys set)`);
+  let nftCreate = await new TokenCreateTransaction()
     .setTokenName("Fall Collection")
     .setTokenSymbol("LEAF")
     .setTokenType(TokenType.NonFungibleUnique)
@@ -36,56 +47,34 @@ async function main() {
     .setTreasuryAccountId(treasuryId)
     .setSupplyType(TokenSupplyType.Finite)
     .setMaxSupply(5)
-    // No admin key, only the required supply key is set
-    .setSupplyKey(treasuryKey)
+    // Set keys
+    .setAdminKey(adminKey)
+    .setFreezeKey(randomKey)
+    .setKycKey(randomKey)
+    .setWipeKey(randomKey)
+    .setSupplyKey(randomKey)
+    .setPauseKey(randomKey)
+    .setFeeScheduleKey(randomKey)
     .freezeWith(client)
     .sign(treasuryKey);
 
-  //let nftCreateTxSign = await nftCreateTx.sign(adminKey);
-  let nftCreateSubmit = await nftCreateTx.execute(client);
+  let nftCreateTxSign = await nftCreate.sign(adminKey);
+  let nftCreateSubmit = await nftCreateTxSign.execute(client);
   let nftCreateRx = await nftCreateSubmit.getReceipt(client);
   let tokenId = nftCreateRx.tokenId;
   console.log(`- Created NFT with Token ID: ${tokenId}`);
 
-  /* Output for token:
+  // Update supply key from token using token update transaction (not possible to remove by setting to "null")
+  console.log('\n- Updating token with new supply key');
+  let tokenUpdateTx = await new TokenUpdateTransaction()
+    .setTokenId(tokenId)
+    .setSupplyKey(newSupplyKey) // update supply key
+    .freezeWith(client)
+    .sign(adminKey);
 
-    {
-        "admin_key": null,
-        "auto_renew_account": "0.0.2617920",
-        "auto_renew_period": 7776000,
-        "created_timestamp": "1675418666.482710003",
-        "custom_fees": {
-            "created_timestamp": "1675418666.482710003",
-            "fixed_fees": [],
-            "royalty_fees": []
-        },
-        "decimals": "0",
-        "deleted": false,
-        "expiry_timestamp": 1683194666482710003,
-        "fee_schedule_key": null,
-        "freeze_default": false,
-        "freeze_key": null,
-        "initial_supply": "0",
-        "kyc_key": null,
-        "max_supply": "5",
-        "memo": "",
-        "modified_timestamp": "1675418666.482710003",
-        "name": "Fall Collection",
-        "pause_key": null,
-        "pause_status": "NOT_APPLICABLE",
-        "supply_key": {
-            "_type": "ED25519",
-            "key": "e86357247a5036069236433adb2cdd42c2c3a5d0479b571566a211d4125f7b47"
-        },
-        "supply_type": "FINITE",
-        "symbol": "LEAF",
-        "token_id": "0.0.3371173",
-        "total_supply": "0",
-        "treasury_account_id": "0.0.3371172",
-        "type": "NON_FUNGIBLE_UNIQUE",
-        "wipe_key": null
-        }
-  */
+  let tokenUpdateTxSubmit = await tokenUpdateTx.execute(client);
+  let tokenUpdateTxRx = await tokenUpdateTxSubmit.getReceipt(client);
+  console.log('- Updated supply key');
 
   client.close();
 

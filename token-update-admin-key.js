@@ -66,7 +66,6 @@ async function main() {
     .freezeWith(client)
     .sign(newAdminKey);
 
-  // Only admin key (multisig) needs to sign
   let tokenUpdateTxSign = await tokenUpdateTx.sign(adminKey);
   let tokenUpdateTxSubmit = await tokenUpdateTxSign.execute(client);
   let tokenUpdateTxRx = await tokenUpdateTxSubmit.getReceipt(client);
