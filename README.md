@@ -267,4 +267,6 @@ let nftCreate = await new TokenCreateTransaction()
 
 ## Learn more about token keys?
 
-Reach out on [Discord](https://hedera.com/discord) or look at the docs about [token creation](https://docs.hedera.com/hedera/sdks-and-apis/sdks/tokens/define-a-token) using the Hedera Token Service.
+❓ Reach out on [Discord](https://hedera.com/discord) or look at the docs about [token creation](https://docs.hedera.com/hedera/sdks-and-apis/sdks/tokens/define-a-token) using the Hedera Token Service.
+
+📚 If you want to explore all examples, check the [token keys example repository](https://github.com/michielmulders/token-keys-test-cases).
