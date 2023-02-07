@@ -133,7 +133,9 @@ let tokenUpdateTx = await new TokenUpdateTransaction()
 ### Case 3
 **Can the admin key update other keys?**
 
-**Output:** Yes, the admin key has the authority to change the supply key, freeze key, pause key, wipe key, and KYC key.
+**Output:** Yes, the admin key has the authority to change the supply key, freeze key, pause key, wipe key, and KYC key. Note that the updated key doesn't need to sign the transaction for it to be assigned to a specific key for the token. 
+
+In the example below, the supply key is updated with a new supply key. The `newSupplyKey` doesn't need to sign the transaction, just the `adminKey` needs to sign.
 
 ```js
 let tokenUpdateTx = await new TokenUpdateTransaction()
