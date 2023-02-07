@@ -1,4 +1,4 @@
-# Hedera Token Service: Everything about setting token keys for NFTs
+# Hedera Token Service: NFT Token Keys Edge Cases
 
 This project explores various test cases related to setting token keys for NFTs created using the Hedera Token Service (HTS). 
 
